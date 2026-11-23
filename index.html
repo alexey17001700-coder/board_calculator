@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Калькулятор досок</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #2c1810 0%, #4a2c1a 50%, #6b4423 100%);
+    padding: 16px;
+  }
+  .card {
+    width: 100%; max-width: 460px;
+    background: #fffaf3;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    overflow: hidden;
+  }
+  .head {
+    background: linear-gradient(135deg, #8b5a2b, #a0522d);
+    color: #fff; padding: 22px 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .head .ico { font-size: 30px; }
+  .head h1 { font-size: 20px; font-weight: 700; }
+  .head p { font-size: 12px; opacity: .85; margin-top: 2px; }
+  .body { padding: 22px 24px 26px; }
+  .row { display: flex; gap: 12px; }
+  .field { flex: 1; margin-bottom: 14px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #6b4423; margin-bottom: 5px; }
+  input {
+    width: 100%; padding: 11px 12px;
+    border: 2px solid #e6d5c0; border-radius: 10px;
+    font-size: 15px; background: #fff; color: #2c1810;
+    transition: border-color .2s;
+  }
+  input:focus { outline: none; border-color: #a0522d; }
+  .btn {
+    width: 100%; padding: 14px; margin-top: 8px;
+    border: none; border-radius: 12px; cursor: pointer;
+    background: linear-gradient(135deg, #8b5a2b, #a0522d);
+    color: #fff; font-size: 16px; font-weight: 700;
+    transition: transform .1s, box-shadow .2s;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn:hover { box-shadow: 0 8px 20px rgba(160,82,45,.4); }
+  .result {
+    margin-top: 18px; padding: 18px; border-radius: 14px;
+    background: #f5e6d3; border: 2px dashed #c9a678;
+    display: none;
+  }
+  .result.show { display: block; animation: pop .3s ease; }
+  @keyframes pop { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .res-line { display: flex; justify-content: space-between; padding: 7px 0; font-size: 14px; border-bottom: 1px solid #e6d5c0; }
+  .res-line:last-child { border-bottom: none; }
+  .res-line span:first-child { color: #6b4423; }
+  .res-line span:last-child { font-weight: 700; color: #2c1810; }
+  .big { font-size: 22px !important; color: #a0522d !important; }
+  .err { color: #c0392b; font-size: 13px; margin-top: 10px; display: none; }
+  .err.show { display: block; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="head">
+      <div class="ico">🪵</div>
+      <div>
+        <h1>Калькулятор досок</h1>
+        <p>Объём, площадь и стоимость пиломатериала</p>
+      </div>
+    </div>
+    <div class="body">
+      <div class="row">
+        <div class="field">
+          <label>Длина (мм)</label>
+          <input id="len" type="number" inputmode="decimal" placeholder="6000" value="6000">
+        </div>
+        <div class="field">
+          <label>Ширина (мм)</label>
+          <input id="wid" type="number" inputmode="decimal" placeholder="150" value="150">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Толщина (мм)</label>
+          <input id="thk" type="number" inputmode="decimal" placeholder="50" value="50">
+        </div>
+        <div class="field">
+          <label>Количество (шт)</label>
+          <input id="qty" type="number" inputmode="decimal" placeholder="10" value="10">
+        </div>
+      </div>
+      <div class="field">
+        <label>Цена за 1 м³ (₽) — необязательно</label>
+        <input id="price" type="number" inputmode="decimal" placeholder="18000">
+      </div>
+      <button class="btn" onclick="calc()">Рассчитать</button>
+      <div class="err" id="err">Заполните все поля корректными числами.</div>
+
+      <div class="result" id="res">
+        <div class="res-line"><span>Объём одной доски</span><span id="r1">—</span></div>
+        <div class="res-line"><span>Площадь всех досок</span><span id="r2">—</span></div>
+        <div class="res-line"><span>Общий объём</span><span id="r3" class="big">—</span></div>
+        <div class="res-line" id="priceRow" style="display:none"><span>Стоимость</span><span id="r4" class="big">—</span></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+function calc() {
+  const len = parseFloat(document.getElementById('len').value);
+  const wid = parseFloat(document.getElementById('wid').value);
+  const thk = parseFloat(document.getElementById('thk').value);
+  const qty = parseFloat(document.getElementById('qty').value);
+  const price = parseFloat(document.getElementById('price').value);
+  const err = document.getElementById('err');
+  const res = document.getElementById('res');
+
+  if (!(len > 0) || !(wid > 0) || !(thk > 0) || !(qty > 0)) {
+    err.classList.add('show');
+    res.classList.remove('show');
+    return;
+  }
+  err.classList.remove('show');
+
+  const volOne = (len / 1000) * (wid / 1000) * (thk / 1000); // м³
+  const total = volOne * qty;
+  const area = (len / 1000) * (wid / 1000) * qty; // м²
+
+  document.getElementById('r1').textContent = volOne.toFixed(4) + ' м³';
+  document.getElementById('r2').textContent = area.toFixed(3) + ' м²';
+  document.getElementById('r3').textContent = total.toFixed(3) + ' м³';
+
+  const priceRow = document.getElementById('priceRow');
+  if (price > 0) {
+    priceRow.style.display = 'flex';
+    document.getElementById('r4').textContent = (total * price).toLocaleString('ru-RU') + ' ₽';
+  } else {
+    priceRow.style.display = 'none';
+  }
+
+  res.classList.add('show');
+}
+</script>
+</body>
+</html>
